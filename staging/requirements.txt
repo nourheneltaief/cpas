@@ -1,0 +1,5 @@
+python-dotenv
+pyyaml
+psycopg2
+pandas
+sqlalchemy
