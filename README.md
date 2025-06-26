@@ -13,8 +13,8 @@ high-value customers, calculate profit margins, and make data-driven decisions.
     pip install -r requirements.txt
 ```
 
-* Run the cli.py script under the staging module and pass the working directory containing the
-* raw txt files.
+* Run the cli.py script under the staging module and pass the working directory containing the 
+raw txt files.
 
 ```
     python staging/cli.py --work_dir=PATH_TO_DATA
