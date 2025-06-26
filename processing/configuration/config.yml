@@ -1,0 +1,6 @@
+analysis:
+  remove_unnecessary_labels: 'false'
+  remove_outliers:
+    threshold: 3 # x standard deviation
+    columns: ['montant']
+  drop: ['debit', 'credit', 'solde']

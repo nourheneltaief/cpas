@@ -3,10 +3,9 @@ data:
   output:
       type: 'db'
       name: 'transactions'
-
   columns: ['auxiliaire', 'folio', 'numero_piece_comptable', 'ligne_pc', 'date_pc', 'code_journal', 'agence', 'libelle',
                'sens', 'code_journal_1', 'code_analytique', 'utilisateur', 'cg', 'montant', 'debit', 'credit',
               'solde']
-
-use_pandas_interim: 'true'
-remove_unnecessary_labels: 'false'
+preliminary_analysis:
+  use_pandas_interim: 'true'
+  remove_unnecessary_labels: 'false'

@@ -3,10 +3,10 @@ import logging
 import os
 import re
 from collections import defaultdict
-import pandas as pd
 from sqlalchemy import create_engine
-
+import pandas as pd
 from utilities import *
+from processing.main import Processor
 
 class Dataloader:
     def __init__(self, config):
@@ -29,18 +29,13 @@ class Dataloader:
         create_table = create_table_query(table_name)
         self.execute_query(create_table)
 
-        if self.config['use_pandas_interim'].lower() == 'true':
+        if self.config['preliminary_analysis']['use_pandas_interim'].lower() == 'true':
             self.logger.info('Using pandas as interim for easy transformations...')
             self.df = self.rows_to_df(rows)
             self.logger.info('Dataframe created.')
-            # TODO remove_outliers in pandas then send df to database
 
-            self.df = self.df.drop_duplicates()
-            self.logger.info('Duplicates dropped.')
-
-            if self.config['remove_unnecessary_labels'].lower() == 'true':
-                self.df = self.df[~self.df['libelle'].str.contains('ARRETE', case=False, na=False)]
-                self.logger.info('Unnecessary labels dropped.')
+            processor = Processor(self.config, self.df)
+            self.df = processor.df
 
             engine = self.create_engine()
 
@@ -52,7 +47,7 @@ class Dataloader:
             insert_data = insert_all_rows(table_name)
             self.execute_query(insert_data, many=True, data=rows)
 
-            if self.config['remove_unnecessary_labels'].lower() == 'true':
+            if self.config['preliminary_analysis']['remove_unnecessary_labels'].lower() == 'true':
                 remove_query = remove_unnecessary_labels(table_name)
                 self.execute_query(remove_query)
 
@@ -67,7 +62,7 @@ class Dataloader:
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
 
-        # Add the handler to the logger (avoid duplicates!)
+        # Add the handler to the logger
         if not self.logger.hasHandlers():
             self.logger.addHandler(handler)
 
