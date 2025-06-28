@@ -1,0 +1,21 @@
+### Staging
+staging:
+  log_level: 10
+  input_dir: 'raw_data'
+  output:
+    type: 'df'
+    # name: 'transactions' table name : to be set if type equals 'db' and use_pandas equals 'false'
+  columns: ['auxiliaire', 'folio', 'numero_piece_comptable', 'ligne_pc', 'date_pc', 'code_journal', 'agence',
+            'libelle', 'sens', 'code_journal_1', 'code_analytique', 'utilisateur', 'cg', 'montant', 'debit', 'credit',
+            'solde' ]
+  use_pandas: 'true'
+
+### Processing
+processing:
+  remove_unnecessary_labels: 'true' # remove label rows with 'ARRETE' in it
+  remove_outliers:
+    threshold: 3 # x standard deviation
+    columns: [ 'montant' ]
+  drop: [] # columns to drop
+
+### Forecasting

@@ -24,7 +24,7 @@ class Processor:
         self.logger.info('Duplicates dropped.')
 
         if self.config['remove_outliers']:
-            self.logger.info(f'User turned on outlier detection mechanism with the following setting: '
+            self.logger.info(f'User turned on outlier detection mechanism with the following settings: '
                              f'{self.config['remove_outliers']}')
             threshold = self.config['remove_outliers']['threshold']
             for col in self.config['remove_outliers']['columns']:
