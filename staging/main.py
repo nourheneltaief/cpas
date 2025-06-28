@@ -5,51 +5,45 @@ import re
 from collections import defaultdict
 from sqlalchemy import create_engine
 import pandas as pd
-from utilities import *
-from processing.main import Processor
+
+from staging import utilities
+
 
 class Dataloader:
     def __init__(self, config):
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger('CPAS')
         self.config = config
 
         self.set_logger_config()
-        # test connection to db
-        self.test_db_connection()
 
         self.pattern = re.compile(r"(\d{4})-(\d+)\.txt?$")
         self.data_dict = self.get_data_dict()
 
         rows = self.get_rows_list()
 
-        table_name = self.config['data']['output']['name']
-        drop_table = drop_table_if_exists_query(table_name)
-        self.execute_query(drop_table)
-
-        create_table = create_table_query(table_name)
-        self.execute_query(create_table)
-
-        if self.config['preliminary_analysis']['use_pandas_interim'].lower() == 'true':
-            self.logger.info('Using pandas as interim for easy transformations...')
+        if self.config['use_pandas'].lower() == 'true':
+            self.logger.info('Using dataframes...')
             self.df = self.rows_to_df(rows)
             self.logger.info('Dataframe created.')
-
-            processor = Processor(self.config, self.df)
-            self.df = processor.df
-
-            engine = self.create_engine()
-
-            self.logger.info('Sending dataframe to db...')
-            self.df.to_sql(table_name, engine, if_exists='replace', index=False)
-            self.logger.info('Dataframe sent to db.')
-
         else:
-            insert_data = insert_all_rows(table_name)
+            self.logger.info('Using database tables...')
+
+            # test connection to db
+            self.test_db_connection()
+
+            table_name = self.config['output']['name']
+
+            drop_table = utilities.drop_table_if_exists_query(table_name)
+            self.execute_query(drop_table)
+
+            create_table = utilities.create_table_query(table_name)
+            self.execute_query(create_table)
+
+            insert_data = utilities.insert_all_rows(table_name)
             self.execute_query(insert_data, many=True, data=rows)
 
-            if self.config['preliminary_analysis']['remove_unnecessary_labels'].lower() == 'true':
-                remove_query = remove_unnecessary_labels(table_name)
-                self.execute_query(remove_query)
+            remove_query = utilities.remove_unnecessary_labels(table_name)
+            self.execute_query(remove_query)
 
 
     def set_logger_config(self):
@@ -107,7 +101,7 @@ class Dataloader:
 
     def get_data_dict(self):
         files_by_code = defaultdict(list)
-        dir_ = os.path.join(self.config['work_dir'], self.config['data']['input_dir'])
+        dir_ = os.path.join(self.config['work_dir'], self.config['input_dir'])
         for filename_ in os.listdir(dir_):
             match = self.pattern.match(filename_)
             if match:
@@ -125,20 +119,21 @@ class Dataloader:
             self.logger.info(f"Extracting data [code={code}]...")
             for filename in self.data_dict[code]:
                 self.logger.info(f"     Extracting data for year={filename[0: 4]}")
-                file_path = os.path.join(self.config['work_dir'], self.config['data']['input_dir'], filename)
+                file_path = os.path.join(self.config['work_dir'], self.config['input_dir'], filename)
                 with open(file_path, 'r') as file:
                     lines = file.readlines()
-                rows.extend(get_lines_info(lines))
+                rows.extend(utilities.get_lines_info(lines))
 
         return rows
 
     def rows_to_df(self, rows):
-        return pd.DataFrame(rows, columns=self.config['data']['columns'])
+        return pd.DataFrame(rows, columns=self.config['columns'])
 
     def create_engine(self):
-        username = self.config['DB_USER']
-        pwd = self.config['DB_PASSWORD']
-        host = self.config['DB_HOST']
-        port = self.config['DB_PORT']
-        dbname = self.config['DB_NAME']
+        conf = self.config['DB_INFO']
+        username = conf['DB_USER']
+        pwd = conf['DB_PASSWORD']
+        host = conf['DB_HOST']
+        port = conf['DB_PORT']
+        dbname = conf['DB_NAME']
         return create_engine(f'postgresql+psycopg2://{username}:{pwd}@{host}:{port}/{dbname}')

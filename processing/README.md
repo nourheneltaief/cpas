@@ -1,1 +1,1 @@
-# Processing module for CPAS
+# Processing module
