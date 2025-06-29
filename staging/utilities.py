@@ -1,5 +1,19 @@
+from datetime import datetime
+
 def extract_date(line_date: str):
-    return line_date[2: 4] + '/' + line_date[4: 6] + '/' + line_date[:2]
+    month = line_date[2: 4]
+    day = line_date[4: 6]
+    year = line_date[:2]
+    return month, day, year
+
+def is_valid_date(month, day, year):
+    date_str = f"{month}/{day}/{year}"
+    try:
+        d = datetime.strptime(date_str, "%m/%d/%y")
+        # do not extract rows when the date is first or last of year
+        return True and d.timetuple().tm_yday not in [1, 365, 364]
+    except ValueError:
+        return False
 
 def get_debit_sold_credit(sens: str, amount: float):
     if sens == 'D':
@@ -10,15 +24,18 @@ def get_debit_sold_credit(sens: str, amount: float):
 def get_lines_info(lines: list[str]):
     rows = []
     for line in lines:
+        aux = line[8:16]
+        month, day, year = extract_date(line[25: 31])
+        if len(aux.strip()) not in [0, 4] or not is_valid_date(month, day, year):
+            continue
+
         sens = line[71: 72]
         amount = float(line[105:])
         debit, sold, credit = get_debit_sold_credit(sens, amount)
         rows.append((
-            # aux       folio         num_comp      pc_line       date                        journal_code  code_agence
-            line[8:16], line[16: 18], line[18: 23], line[23: 25], extract_date(line[25: 31]), line[31: 33], line[33: 36],
-            # libelle     sens  analytical    jr_code_1             user          cg
-            line[36: 71], sens, line[72: 76], line[76: 94].strip(), line[94: 96], line[96: 105], amount, debit, sold,
-            credit
+            aux if len(aux.strip()) != 0 else None, line[16: 18], line[18: 23], line[23: 25], f"{month}/{day}/{year}",
+            line[31: 33], line[33: 36], line[36: 71], sens, line[72: 76], line[76: 94].strip(), line[94: 96],
+            line[96: 105], amount, debit, sold, credit
         ))
     return rows
 
